@@ -24,6 +24,7 @@ def main(argv):
             input_path = arg
         elif opt in ("-v", "--vocabulary"):
             is_vocab_info_print = True
+            is_reset = True
         elif opt in ("-r", "--reset"):
             is_reset = True
         elif opt in ("-m", "--markdown"):
