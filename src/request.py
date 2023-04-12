@@ -1,7 +1,12 @@
-from nltk import RegexpTokenizer
-from pyarrow import json
+import json
+import os
+import socket
+from datetime import datetime
+from math import sqrt
 
-from config import JSON_PATH
+from nltk import RegexpTokenizer
+
+from config import JSON_PATH, EXTRACTED_DATA_PATH
 
 
 def build_request_vector(txt):
@@ -46,14 +51,43 @@ def request(text):
     for document in partial_result:
         partial_result[document] = partial_result[document] / (doc_vocab[document]["norme"] * request_vector_norm)
 
-    return partial_result
+    return partial_result, request_vector
 
 
-def print_request(request, n):
+def print_request(request, n, request_vector, markdown=True):
     i = 1
-    for k, v in reversed(sorted(request.items(), key=lambda x: x[1])):
+    items = reversed(sorted(request.items(), key=lambda x: x[1]))
+    if markdown:
+        output_dir = "../ressources/output"
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        date = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+        output_filename = f"{output_dir}/{date}.md"
+        with open(output_filename, "a") as f:
+            f.write("# Search Report\n\n")
+            f.write("Machine: " + socket.gethostname() + "\n\n")
+            f.write("Time: " + date + "\n\n")
+
+            f.write("## Request vector \n\n")
+
+            f.write('| Key | Value |\n')
+            f.write('| --- | --- |\n')
+            for key, value in request_vector.items():
+                f.write(f'| {key} | {value} |\n')
+
+            f.write("\n## Results \n\n")
+            f.write("\n| # | Filename | Score | Content |\n")
+            f.write(
+                "|:---:|:-------------:|:-------------------:|:-----------------------:|\n")
+    for k, v in items:
         if i > int(n):
             break
-        content = open("/home/matteo/Code/info4-acces-recherche/collection/" + k, "r").read()
-        print(i, k, v, " : ", content[:20] + "...")
+        content = open(EXTRACTED_DATA_PATH + k, "r").read()
+        if markdown:
+            with open(output_filename, "a") as f:
+                f.write(f"| {i} | [**{k}** ](../collection/{k})| {v} | {content[:20]}... |\n")
+        else:
+            print(i, k, v, " : ", content[:20] + "...")
         i += 1
+    if markdown:
+        print("GENERATED MARKDOWN REPORT AT " + output_filename)
